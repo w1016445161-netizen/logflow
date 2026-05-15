@@ -49,6 +49,15 @@ POST /api/events
 - [x] 限流不可用时自动放行，保证服务基本可用
 - [x] Day 3 smoke test
 
+### Day 4 已完成
+
+- [x] Kafka 服务接入（Docker Compose 启动 apache/kafka:3.7.0，KRaft 模式）
+- [x] `EVENT_WRITE_MODE` 支持 `sync` / `kafka` 写入模式切换
+- [x] FastAPI Producer 写入 Kafka topic `logflow-events`
+- [x] Consumer 独立进程异步消费并写入 MySQL
+- [x] Kafka 写入失败时自动 fallback 同步写库
+- [x] Day 4 smoke test
+
 ---
 
 ## 技术栈
@@ -59,6 +68,7 @@ POST /api/events
 - PyMySQL
 - Pydantic Settings
 - Redis 7
+- Kafka (Apache 3.7.0, KRaft)
 - Docker Compose
 - PowerShell Smoke Test
 
@@ -108,7 +118,7 @@ logflow/
 
 ### 1. 启动 MySQL
 
-项目默认将容器内 MySQL 的 `3306` 端口映射到本机 `3307`，避免和本机已有 MySQL 冲突。Redis 映射到本机 `6379`。
+项目默认将容器内 MySQL 的 `3306` 端口映射到本机 `3307`，避免和本机已有 MySQL 冲突。Redis 映射到本机 `6379`，Kafka 映射到本机 `9092`。
 
 ```powershell
 cd D:\projects\logflow
@@ -121,7 +131,7 @@ docker compose up -d
 docker ps
 ```
 
-正常应看到 `logflow-mysql` 和 `logflow-redis` 两个容器。
+正常应看到 `logflow-mysql`、`logflow-redis`、`logflow-kafka` 三个容器。
 
 如果想查看 MySQL 是否初始化完成：
 
@@ -169,6 +179,11 @@ RATE_LIMIT_ENABLED=true
 RATE_LIMIT_MAX_REQUESTS=10
 RATE_LIMIT_WINDOW_SECONDS=60
 STATS_CACHE_TTL_SECONDS=30
+EVENT_WRITE_MODE=sync
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+KAFKA_TOPIC_EVENTS=logflow-events
+KAFKA_PRODUCER_ENABLED=true
+KAFKA_CONSUMER_GROUP=logflow-consumer-group
 ```
 
 ---
@@ -184,6 +199,29 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```text
 http://localhost:8000/api/health
 ```
+
+---
+
+### 6. 切换到 Kafka 模式（可选）
+
+默认 `EVENT_WRITE_MODE=sync`，所有请求同步写入 MySQL。
+
+如需启用 Kafka 异步削峰：
+
+编辑 `backend/.env`，修改：
+
+```env
+EVENT_WRITE_MODE=kafka
+```
+
+重启 FastAPI，然后启动 Consumer：
+
+```powershell
+cd D:\projects\logflow\backend
+.\.venv\Scripts\python.exe -m app.kafka.consumer
+```
+
+Consumer 会持续消费 Kafka 消息并写入 MySQL。Kafka 写入失败时自动 fallback 同步写库。
 
 ---
 
@@ -210,6 +248,20 @@ powershell -ExecutionPolicy Bypass -File .\scripts\day2_smoke_test.ps1
 ```powershell
 cd D:\projects\logflow\backend
 powershell -ExecutionPolicy Bypass -File .\scripts\day3_smoke_test.ps1
+```
+
+### Day 4 验收（Kafka 模式）
+
+确保 `.env` 中 `EVENT_WRITE_MODE=kafka`，重启 FastAPI 后：
+
+```powershell
+# 终端 1：启动 Consumer
+cd D:\projects\logflow\backend
+.\.venv\Scripts\python.exe -m app.kafka.consumer
+
+# 终端 2：运行 smoke test
+cd D:\projects\logflow\backend
+powershell -ExecutionPolicy Bypass -File .\scripts\day4_smoke_test.ps1
 ```
 
 当前 Day 1 验收结果示例：
@@ -389,11 +441,10 @@ created_at
 
 ---
 
-## Day 4-7 计划
+## Day 5-7 计划
 
 > 以下功能尚未实现，仅作为后续开发路线。
 
-- Day 4：Kafka 异步削峰，将日志接收与 MySQL 落库解耦
 - Day 5：工程化完善，补充结构化日志、pytest 测试、Docker Compose 多服务编排
 - Day 6：Locust 压测，记录 100 / 300 / 500 并发下的 QPS、平均响应时间、P95 和错误率
 - Day 7：README 完善、架构图、压测报告、简历描述和面试讲稿
@@ -404,8 +455,10 @@ created_at
 
 当前版本为学习与作品集项目，重点验证 API 网关访问日志采集场景下的后端链路设计。
 
-目前已实现：FastAPI 同步写入 MySQL、统计查询、Redis 固定窗口限流、统计缓存。缓存存在 TTL 内短暂延迟，限流不可用时自动放行。
+目前已实现：FastAPI 同步写入 MySQL、统计查询、Redis 固定窗口限流、统计缓存、Kafka 异步削峰、Consumer 异步落库。
 
-后续将接入 Kafka 削峰和 Locust 压测。
+缓存存在 TTL 内短暂延迟，限流不可用时自动放行。Consumer 为逐条消费落库，Kafka 写入失败时支持 fallback 同步写库。
+
+后续将接入 Locust 压测。
 
 本项目不宣称支持百万级并发，也不替代 ELK、Loki、Prometheus、Grafana 等生产级可观测平台。

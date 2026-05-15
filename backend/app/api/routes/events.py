@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.event import EventCreate
-from app.services.event_service import create_event, get_event
+from app.services.event_service import submit_event, get_event
 from app.services.rate_limit_service import check_rate_limit
 from app.core.exceptions import RateLimitException
 from app.core.response import success_response
@@ -20,14 +20,8 @@ def create_event_endpoint(data: EventCreate, request: Request, db: Session = Dep
             "current_count": result["current_count"],
         })
 
-    event = create_event(db, data)
-    return success_response(
-        data={
-            "event_id": event.event_id,
-            "request_id": event.request_id,
-        },
-        request_id=request.state.request_id,
-    )
+    resp_data = submit_event(db, data)
+    return success_response(data=resp_data, request_id=request.state.request_id)
 
 
 @router.get("/events/{event_id}")
