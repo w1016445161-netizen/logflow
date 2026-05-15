@@ -32,5 +32,5 @@ async def app_exception_handler(request: Request, exc: AppException):
     req_id = getattr(request.state, "request_id", str(uuid.uuid4()))
     return JSONResponse(
         status_code=exc.status_code,
-        content=error_response(code=exc.code, message=exc.message, request_id=req_id),
+        content=error_response(code=exc.code, message=exc.message, request_id=req_id, data=exc.data),
     )

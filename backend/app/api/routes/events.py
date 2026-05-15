@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.event import EventCreate
 from app.services.event_service import create_event, get_event
+from app.services.rate_limit_service import check_rate_limit
+from app.core.exceptions import RateLimitException
 from app.core.response import success_response
 
 router = APIRouter()
@@ -10,6 +12,14 @@ router = APIRouter()
 
 @router.post("/events")
 def create_event_endpoint(data: EventCreate, request: Request, db: Session = Depends(get_db)):
+    result = check_rate_limit(data.client_id, data.ip)
+    if result["limited"]:
+        raise RateLimitException(data={
+            "limit": result["limit"],
+            "window_seconds": result["window_seconds"],
+            "current_count": result["current_count"],
+        })
+
     event = create_event(db, data)
     return success_response(
         data={

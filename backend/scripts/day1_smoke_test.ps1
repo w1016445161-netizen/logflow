@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Script:HasFailure = $false
+$RunId = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 
 function Write-Step($name) {
     Write-Host -NoNewline "[....] $name "
@@ -44,7 +44,7 @@ try {
 Write-Step "Create event (api_access)"
 
 $body1 = @{
-    client_id    = "client-001"
+    client_id    = "client-001-$RunId"
     user_id      = "u10001"
     event_type   = "api_access"
     path         = "/api/login"
@@ -77,7 +77,7 @@ Write-Step "Get event by event_id"
 try {
     $r = Invoke-RestMethod -Uri "$BaseUrl/api/events/$EventId1" -Method Get
     if (-not $r.success) { throw "success is false" }
-    if ($r.data.client_id -ne "client-001") { throw "client_id mismatch" }
+    if ($r.data.client_id -ne "client-001-$RunId") { throw "client_id mismatch" }
     if ($r.data.event_type -ne "api_access") { throw "event_type mismatch" }
     Write-Pass
 } catch {
@@ -90,7 +90,7 @@ try {
 Write-Step "Create event (api_error)"
 
 $body2 = @{
-    client_id    = "client-002"
+    client_id    = "client-002-$RunId"
     user_id      = "u10002"
     event_type   = "api_error"
     path         = "/api/orders/create"
@@ -120,7 +120,7 @@ try {
 Write-Step "Create event (slow_request)"
 
 $body3 = @{
-    client_id    = "client-003"
+    client_id    = "client-003-$RunId"
     user_id      = "u10003"
     event_type   = "slow_request"
     path         = "/api/payments/callback"

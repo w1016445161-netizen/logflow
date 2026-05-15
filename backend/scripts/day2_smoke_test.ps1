@@ -3,6 +3,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$RunId = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 
 function Write-Step($name) {
     Write-Host -NoNewline "[....] $name "
@@ -41,7 +42,7 @@ Write-Step "Insert test data"
 
 try {
     $null = Post-Event @{
-        client_id    = "d2-client-001"
+        client_id    = "d2-client-001-$RunId"
         user_id      = "d2-u10001"
         event_type   = "api_access"
         path         = "/api/login"
@@ -56,7 +57,7 @@ try {
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-001"
+        client_id    = "d2-client-001-$RunId"
         user_id      = "d2-u10001"
         event_type   = "api_access"
         path         = "/api/login"
@@ -71,7 +72,7 @@ try {
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-002"
+        client_id    = "d2-client-002-$RunId"
         user_id      = "d2-u10002"
         event_type   = "api_access"
         path         = "/api/users/profile"
@@ -86,7 +87,7 @@ try {
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-003"
+        client_id    = "d2-client-003-$RunId"
         user_id      = "d2-u10003"
         event_type   = "api_error"
         path         = "/api/orders/create"
@@ -101,7 +102,7 @@ try {
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-004"
+        client_id    = "d2-client-004-$RunId"
         user_id      = "d2-u10004"
         event_type   = "api_error"
         path         = "/api/orders/create"
@@ -116,7 +117,7 @@ try {
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-005"
+        client_id    = "d2-client-005-$RunId"
         user_id      = "d2-u10005"
         event_type   = "slow_request"
         path         = "/api/payments/callback"
@@ -131,7 +132,7 @@ try {
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-006"
+        client_id    = "d2-client-006-$RunId"
         user_id      = "d2-u10006"
         event_type   = "slow_request"
         path         = "/api/products/search"
