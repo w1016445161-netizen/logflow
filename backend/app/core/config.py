@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     APP_NAME: str = "LogFlow"
     APP_ENV: str = "dev"
-    DATABASE_URL: str = "mysql+pymysql://logflow:logflow123@localhost:3306/logflow"
+    DATABASE_URL: str = "mysql+pymysql://logflow:logflow123@localhost:3307/logflow"
     REDIS_URL: str = "redis://localhost:6379/0"
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_MAX_REQUESTS: int = 10

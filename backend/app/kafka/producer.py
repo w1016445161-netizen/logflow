@@ -1,6 +1,11 @@
 import json
+
 from kafka import KafkaProducer
+
 from app.core.config import settings
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 _producer = None
 
@@ -27,3 +32,14 @@ def send_event_to_kafka(event_data: dict) -> dict:
         "partition": record.partition,
         "offset": record.offset,
     }
+
+
+def close_kafka_producer() -> None:
+    global _producer
+    if _producer is not None:
+        try:
+            _producer.flush()
+            _producer.close()
+            _producer = None
+        except Exception as e:
+            logger.warning("kafka_producer_close_failed", extra={"error": str(e)})

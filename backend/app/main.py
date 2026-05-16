@@ -9,6 +9,7 @@ from app.core.response import error_response
 from app.core.logging import setup_logging, get_logger
 from app.db.base import Base
 from app.db.session import engine
+from app.kafka.producer import close_kafka_producer
 import app.db.models  # noqa: F401 - ensure models are registered for create_all
 
 logger = get_logger("logflow.main")
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
     setup_logging()
     Base.metadata.create_all(bind=engine)
     yield
+    close_kafka_producer()
 
 
 app = FastAPI(title="LogFlow", version="0.1.0", lifespan=lifespan)
