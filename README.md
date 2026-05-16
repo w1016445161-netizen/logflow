@@ -287,7 +287,15 @@ GET /api/stats/errors?limit=5
 
 ### Consumer
 
-独立 Python 进程，运行 `kafka-python` KafkaConsumer（`auto_offset_reset=latest`, `enable_auto_commit=True`）。逐条消费 JSON 消息、反序列化、写入 MySQL。支持 `KeyboardInterrupt` 优雅退出。
+独立 Python 进程，运行 `kafka-python` KafkaConsumer（`auto_offset_reset=latest`, `enable_auto_commit=True`）。消费流程：
+
+1. 消费 JSON 消息，提取 event_id
+2. 检查 event_id 是否已存在于 MySQL（幂等检查）
+3. 不存在则写入 MySQL，打印 `[CONSUMED] event_id=...`
+4. 已存在则跳过写入，打印 `[SKIPPED] duplicate event_id=...`
+5. 处理失败时写入本地 dead letter 文件 `backend/dead_letters/kafka_failed_events.jsonl`
+
+支持 `KeyboardInterrupt` 优雅退出。Dead letter 为本地 JSONL 文件，用于学习和故障排查；生产环境可扩展为 Kafka DLQ topic 或告警系统。
 
 ### Fallback 策略
 
@@ -398,7 +406,7 @@ CSV 结果输出到 `docs/performance/`。压测报告模板见 [docs/performanc
 | 基础链路 | FastAPI + MySQL 日志上报与查询、健康检查、统一响应格式 |
 | 统计分析 | P95 响应时间、慢请求统计、错误率、热门接口排行 |
 | Redis 增强 | 固定窗口限流、统计缓存、Redis 不可用自动降级 |
-| Kafka 异步化 | Producer 写入 + Consumer 独立进程落库、sync/kafka 模式切换、写入失败 fallback |
+| Kafka 异步化 | Producer 写入 + Consumer 独立进程落库、幂等检查、dead letter 记录、sync/kafka 模式切换、写入失败 fallback |
 | 工程化 | 结构化 JSON 日志、请求耗时中间件、异常分级、pytest mock 测试、smoke test |
 | 压测准备 | Locust 主链路压测脚本、限流专项脚本、压测报告模板 |
 
@@ -411,7 +419,8 @@ CSV 结果输出到 `docs/performance/`。压测报告模板见 [docs/performanc
 **已有约束：**
 
 - 限流为固定窗口实现，非滑动窗口。
-- Consumer 为逐条消费落库，未做批量写入优化。
+- Consumer 为逐条消费落库，未做批量写入优化。已支持基于 event_id 的幂等写入检查。
+- 单条消息处理失败时写入本地 dead letter JSONL 文件，Consumer 不退出。
 - 缓存存在 TTL 内短暂延迟。
 - 不宣称支持百万级并发。
 - 不替代 ELK、Loki、Prometheus、Grafana 等生产级可观测平台。

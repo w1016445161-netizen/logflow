@@ -12,16 +12,16 @@ router = APIRouter()
 
 @router.post("/events")
 def create_event_endpoint(data: EventCreate, request: Request, db: Session = Depends(get_db)):
-    result = check_rate_limit(data.client_id, data.ip)
-    if result["limited"]:
+    rate_limit_result = check_rate_limit(data.client_id, data.ip)
+    if rate_limit_result.limited:
         raise RateLimitException(data={
-            "limit": result["limit"],
-            "window_seconds": result["window_seconds"],
-            "current_count": result["current_count"],
+            "limit": rate_limit_result.limit,
+            "window_seconds": rate_limit_result.window_seconds,
+            "current_count": rate_limit_result.current_count,
         })
 
-    resp_data = submit_event(db, data)
-    return success_response(data=resp_data, request_id=request.state.request_id)
+    submit_result = submit_event(db, data)
+    return success_response(data=submit_result.to_dict(), request_id=request.state.request_id)
 
 
 @router.get("/events/{event_id}")

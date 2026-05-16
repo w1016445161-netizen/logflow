@@ -31,9 +31,9 @@ class TestEventSubmitMode:
         result = submit_event(mock_db, _make_event_data())
 
         assert len(create_called) == 1
-        assert result["write_mode"] == "sync"
-        assert result["event_id"]
-        assert result["request_id"]
+        assert result.write_mode == "sync"
+        assert result.event_id
+        assert result.request_id
 
     def test_kafka_mode_success_returns_kafka_metadata(self, monkeypatch):
         monkeypatch.setattr("app.services.event_service.settings.EVENT_WRITE_MODE", "kafka")
@@ -48,7 +48,7 @@ class TestEventSubmitMode:
             return {"topic": "logflow-events", "partition": 0, "offset": 42}
 
         monkeypatch.setattr("app.services.event_service.create_event", mock_create_event)
-        monkeypatch.setattr("app.kafka.producer.send_event_to_kafka", mock_send_to_kafka)
+        monkeypatch.setattr("app.services.event_service.send_event_to_kafka", mock_send_to_kafka)
 
         from app.services.event_service import submit_event
 
@@ -56,10 +56,10 @@ class TestEventSubmitMode:
         result = submit_event(mock_db, _make_event_data())
 
         assert len(create_called) == 0
-        assert result["write_mode"] == "kafka"
-        assert result["kafka_topic"] == "logflow-events"
-        assert result["kafka_partition"] == 0
-        assert result["kafka_offset"] == 42
+        assert result.write_mode == "kafka"
+        assert result.kafka_topic == "logflow-events"
+        assert result.kafka_partition == 0
+        assert result.kafka_offset == 42
 
     def test_kafka_failure_fallback_to_sync(self, monkeypatch):
         monkeypatch.setattr("app.services.event_service.settings.EVENT_WRITE_MODE", "kafka")
@@ -74,7 +74,7 @@ class TestEventSubmitMode:
             raise RuntimeError("kafka broker down")
 
         monkeypatch.setattr("app.services.event_service.create_event", mock_create_event)
-        monkeypatch.setattr("app.kafka.producer.send_event_to_kafka", mock_send_to_kafka)
+        monkeypatch.setattr("app.services.event_service.send_event_to_kafka", mock_send_to_kafka)
 
         from app.services.event_service import submit_event
 
@@ -82,8 +82,8 @@ class TestEventSubmitMode:
         result = submit_event(mock_db, _make_event_data())
 
         assert len(create_called) == 1
-        assert result["write_mode"] == "sync_fallback"
-        assert "kafka broker down" in result["fallback_reason"]
+        assert result.write_mode == "sync_fallback"
+        assert "kafka broker down" in result.fallback_reason
 
     def test_kafka_producer_disabled_fallback_to_sync(self, monkeypatch):
         monkeypatch.setattr("app.services.event_service.settings.EVENT_WRITE_MODE", "kafka")
@@ -102,5 +102,5 @@ class TestEventSubmitMode:
         result = submit_event(mock_db, _make_event_data())
 
         assert len(create_called) == 1
-        assert result["write_mode"] == "sync_fallback"
-        assert result["fallback_reason"] == "producer disabled"
+        assert result.write_mode == "sync_fallback"
+        assert result.fallback_reason == "producer disabled"

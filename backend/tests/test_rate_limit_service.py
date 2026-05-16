@@ -8,8 +8,8 @@ class TestRateLimit:
         from app.services.rate_limit_service import check_rate_limit
 
         result = check_rate_limit("client-a", None)
-        assert result["limited"] is False
-        assert result["current_count"] == 0
+        assert result.limited is False
+        assert result.current_count == 0
 
     def test_under_threshold_allows(self, monkeypatch):
         monkeypatch.setattr("app.services.rate_limit_service.settings.RATE_LIMIT_ENABLED", True)
@@ -22,9 +22,9 @@ class TestRateLimit:
         from app.services.rate_limit_service import check_rate_limit
         result = check_rate_limit("client-b", None)
 
-        assert result["limited"] is False
-        assert result["current_count"] == 5
-        assert result["key"].endswith("client-b")
+        assert result.limited is False
+        assert result.current_count == 5
+        assert result.key.endswith("client-b")
 
     def test_over_threshold_limits(self, monkeypatch):
         monkeypatch.setattr("app.services.rate_limit_service.settings.RATE_LIMIT_ENABLED", True)
@@ -37,8 +37,8 @@ class TestRateLimit:
         from app.services.rate_limit_service import check_rate_limit
         result = check_rate_limit("client-c", None)
 
-        assert result["limited"] is True
-        assert result["current_count"] == 11
+        assert result.limited is True
+        assert result.current_count == 11
 
     def test_first_request_sets_ttl(self, monkeypatch):
         monkeypatch.setattr("app.services.rate_limit_service.settings.RATE_LIMIT_ENABLED", True)
@@ -64,8 +64,9 @@ class TestRateLimit:
         from app.services.rate_limit_service import check_rate_limit
         result = check_rate_limit("client-e", None)
 
-        assert result["limited"] is False
-        assert result["current_count"] == 0
+        assert result.limited is False
+        assert result.current_count == 0
+        assert result.reason == "redis_error"
 
     def test_falls_back_to_ip_when_no_client_id(self, monkeypatch):
         monkeypatch.setattr("app.services.rate_limit_service.settings.RATE_LIMIT_ENABLED", True)
@@ -77,7 +78,7 @@ class TestRateLimit:
         from app.services.rate_limit_service import check_rate_limit
         result = check_rate_limit(None, "10.0.0.5")
 
-        assert "ip:10.0.0.5" in result["key"]
+        assert "ip:10.0.0.5" in result.key
 
     def test_anonymous_when_no_client_id_or_ip(self, monkeypatch):
         monkeypatch.setattr("app.services.rate_limit_service.settings.RATE_LIMIT_ENABLED", True)
@@ -89,4 +90,4 @@ class TestRateLimit:
         from app.services.rate_limit_service import check_rate_limit
         result = check_rate_limit(None, None)
 
-        assert "anonymous" in result["key"]
+        assert "anonymous" in result.key

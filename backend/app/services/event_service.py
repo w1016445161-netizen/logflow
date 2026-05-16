@@ -1,11 +1,42 @@
 import json
 import uuid
+from dataclasses import dataclass
 from typing import Optional
+
 from sqlalchemy.orm import Session
+
 from app.db.models import EventLog
 from app.schemas.event import EventCreate
 from app.core.config import settings
 from app.core.exceptions import NotFoundException
+from app.kafka.producer import send_event_to_kafka
+
+
+@dataclass
+class EventSubmitResult:
+    event_id: str
+    request_id: str
+    write_mode: str
+    kafka_topic: str | None = None
+    kafka_partition: int | None = None
+    kafka_offset: int | None = None
+    fallback_reason: str | None = None
+
+    def to_dict(self) -> dict:
+        data = {
+            "event_id": self.event_id,
+            "request_id": self.request_id,
+            "write_mode": self.write_mode,
+        }
+        if self.kafka_topic is not None:
+            data["kafka_topic"] = self.kafka_topic
+        if self.kafka_partition is not None:
+            data["kafka_partition"] = self.kafka_partition
+        if self.kafka_offset is not None:
+            data["kafka_offset"] = self.kafka_offset
+        if self.fallback_reason is not None:
+            data["fallback_reason"] = self.fallback_reason
+        return data
 
 
 def create_event(db: Session, data: EventCreate, event_id: Optional[str] = None, request_id: Optional[str] = None) -> EventLog:
@@ -36,6 +67,10 @@ def create_event(db: Session, data: EventCreate, event_id: Optional[str] = None,
     return event
 
 
+def event_exists(db: Session, event_id: str) -> bool:
+    return db.query(EventLog).filter(EventLog.event_id == event_id).first() is not None
+
+
 def create_event_from_payload(db: Session, payload: dict) -> EventLog:
     event = EventLog(
         event_id=payload["event_id"],
@@ -57,6 +92,14 @@ def create_event_from_payload(db: Session, payload: dict) -> EventLog:
     db.commit()
     db.refresh(event)
     return event
+
+
+def create_event_from_payload_if_not_exists(db: Session, payload: dict) -> tuple[EventLog | None, bool]:
+    eid = payload["event_id"]
+    if event_exists(db, eid):
+        return None, False
+    event = create_event_from_payload(db, payload)
+    return event, True
 
 
 def get_event(db: Session, event_id: str) -> EventLog:
@@ -85,41 +128,51 @@ def _build_kafka_payload(data: EventCreate, event_id: str, request_id: str) -> d
     }
 
 
-def submit_event(db: Session, data: EventCreate) -> dict:
+def _submit_event_sync(db: Session, data: EventCreate, event_id: str, request_id: str) -> EventSubmitResult:
+    create_event(db, data, event_id, request_id)
+    return EventSubmitResult(event_id=event_id, request_id=request_id, write_mode="sync")
+
+
+def _submit_event_kafka(db: Session, data: EventCreate, event_id: str, request_id: str) -> EventSubmitResult:
+    try:
+        payload = _build_kafka_payload(data, event_id, request_id)
+        result = send_event_to_kafka(payload)
+        return EventSubmitResult(
+            event_id=event_id,
+            request_id=request_id,
+            write_mode="kafka",
+            kafka_topic=result["topic"],
+            kafka_partition=result["partition"],
+            kafka_offset=result["offset"],
+        )
+    except Exception as e:
+        create_event(db, data, event_id, request_id)
+        return EventSubmitResult(
+            event_id=event_id,
+            request_id=request_id,
+            write_mode="sync_fallback",
+            fallback_reason=f"kafka send failed: {e}",
+        )
+
+
+def _submit_event_sync_fallback(event_id: str, request_id: str, reason: str, db: Session, data: EventCreate) -> EventSubmitResult:
+    create_event(db, data, event_id, request_id)
+    return EventSubmitResult(
+        event_id=event_id,
+        request_id=request_id,
+        write_mode="sync_fallback",
+        fallback_reason=reason,
+    )
+
+
+def submit_event(db: Session, data: EventCreate) -> EventSubmitResult:
     event_id = str(uuid.uuid4())
     request_id = str(uuid.uuid4())
 
     if settings.EVENT_WRITE_MODE == "sync":
-        create_event(db, data, event_id, request_id)
-        return {"event_id": event_id, "request_id": request_id, "write_mode": "sync"}
+        return _submit_event_sync(db, data, event_id, request_id)
 
     if settings.EVENT_WRITE_MODE == "kafka" and settings.KAFKA_PRODUCER_ENABLED:
-        try:
-            from app.kafka.producer import send_event_to_kafka
+        return _submit_event_kafka(db, data, event_id, request_id)
 
-            payload = _build_kafka_payload(data, event_id, request_id)
-            result = send_event_to_kafka(payload)
-            return {
-                "event_id": event_id,
-                "request_id": request_id,
-                "write_mode": "kafka",
-                "kafka_topic": result["topic"],
-                "kafka_partition": result["partition"],
-                "kafka_offset": result["offset"],
-            }
-        except Exception as e:
-            create_event(db, data, event_id, request_id)
-            return {
-                "event_id": event_id,
-                "request_id": request_id,
-                "write_mode": "sync_fallback",
-                "fallback_reason": f"kafka send failed: {e}",
-            }
-
-    create_event(db, data, event_id, request_id)
-    return {
-        "event_id": event_id,
-        "request_id": request_id,
-        "write_mode": "sync_fallback",
-        "fallback_reason": "producer disabled",
-    }
+    return _submit_event_sync_fallback(event_id, request_id, "producer disabled", db, data)

@@ -8,3 +8,4 @@ docs/performance/*.csv
 CLAUDE.md
 
 .claude/
+backend/dead_letters/*.jsonl
