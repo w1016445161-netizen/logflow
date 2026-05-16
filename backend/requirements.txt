@@ -7,3 +7,5 @@ python-dotenv
 cryptography
 redis
 kafka-python
+pytest
+httpx

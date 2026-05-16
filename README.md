@@ -58,6 +58,14 @@ POST /api/events
 - [x] Kafka 写入失败时自动 fallback 同步写库
 - [x] Day 4 smoke test
 
+### Day 5 已完成
+
+- [x] 结构化 JSON 日志（Python 标准 logging，JsonFormatter）
+- [x] 请求耗时日志（中间件记录 method / path / status / duration / request_id / client_ip）
+- [x] 异常日志（AppException 输出 WARNING，未预期异常输出 ERROR）
+- [x] pytest mock 测试（统一响应、限流、缓存、事件写入模式切换）
+- [x] Day 5 工程化检查脚本
+
 ---
 
 ## 技术栈
@@ -70,6 +78,7 @@ POST /api/events
 - Redis 7
 - Kafka (Apache 3.7.0, KRaft)
 - Docker Compose
+- pytest
 - PowerShell Smoke Test
 
 ---
@@ -222,6 +231,32 @@ cd D:\projects\logflow\backend
 ```
 
 Consumer 会持续消费 Kafka 消息并写入 MySQL。Kafka 写入失败时自动 fallback 同步写库。
+
+---
+
+## 工程化能力
+
+- **统一响应格式**：`{ success, code, message, data, request_id }`
+- **request_id 全链路**：每个请求自动生成唯一 request_id，贯穿限流、日志、异常
+- **结构化 JSON 日志**：每行一条 JSON，含 timestamp / level / request_id / method / path / status_code / duration_ms / client_ip
+- **请求耗时日志**：中间件自动记录每个 HTTP 请求的耗时
+- **异常日志**：业务异常（WARNING）和未预期异常（ERROR）均结构化记录
+- **pytest mock 测试**：覆盖统一响应、限流降级、缓存降级、事件写入模式切换
+- **Smoke test**：Day 1-4 各级别 PowerShell 烟雾测试
+- **Docker Compose**：统一管理 MySQL、Redis、Kafka 服务
+
+### 运行测试
+
+```powershell
+cd D:\projects\logflow\backend
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+或使用 Day 5 工程化检查脚本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\day5_engineering_check.ps1
+```
 
 ---
 
@@ -441,11 +476,10 @@ created_at
 
 ---
 
-## Day 5-7 计划
+## Day 6-7 计划
 
 > 以下功能尚未实现，仅作为后续开发路线。
 
-- Day 5：工程化完善，补充结构化日志、pytest 测试、Docker Compose 多服务编排
 - Day 6：Locust 压测，记录 100 / 300 / 500 并发下的 QPS、平均响应时间、P95 和错误率
 - Day 7：README 完善、架构图、压测报告、简历描述和面试讲稿
 
