@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .pytest_cache/
 mysql_data/
+docs/performance/*.csv

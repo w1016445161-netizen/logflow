@@ -9,3 +9,4 @@ redis
 kafka-python
 pytest
 httpx
+locust

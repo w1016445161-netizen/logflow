@@ -66,6 +66,15 @@ POST /api/events
 - [x] pytest mock 测试（统一响应、限流、缓存、事件写入模式切换）
 - [x] Day 5 工程化检查脚本
 
+### Day 6 已完成
+
+- [x] Locust 主链路压测脚本（backend/locustfile.py）
+- [x] Redis 限流专项压测脚本（backend/locustfile_rate_limit.py）
+- [x] 100 / 300 / 500 并发压测命令封装（backend/scripts/perf/）
+- [x] 限流检查脚本（backend/scripts/perf/run_rate_limit_check.ps1）
+- [x] 压测报告模板（docs/performance/day6_locust_report.md）
+- [x] Day 6 perf check 快速检查脚本
+
 ---
 
 ## 技术栈
@@ -79,6 +88,7 @@ POST /api/events
 - Kafka (Apache 3.7.0, KRaft)
 - Docker Compose
 - pytest
+- Locust
 - PowerShell Smoke Test
 
 ---
@@ -109,8 +119,20 @@ logflow/
 │  │  │  ├─ event_service.py
 │  │  │  └─ stats_service.py
 │  │  └─ main.py
+│  ├─ locustfile.py
+│  ├─ locustfile_rate_limit.py
 │  ├─ scripts/
-│  │  └─ day1_smoke_test.ps1
+│  │  ├─ day1_smoke_test.ps1
+│  │  ├─ day2_smoke_test.ps1
+│  │  ├─ day3_smoke_test.ps1
+│  │  ├─ day4_smoke_test.ps1
+│  │  ├─ day5_engineering_check.ps1
+│  │  ├─ day6_perf_check.ps1
+│  │  └─ perf/
+│  │     ├─ run_locust_100.ps1
+│  │     ├─ run_locust_300.ps1
+│  │     ├─ run_locust_500.ps1
+│  │     └─ run_rate_limit_check.ps1
 │  ├─ requirements.txt
 │  └─ .env.example
 ├─ docs/
@@ -260,6 +282,49 @@ powershell -ExecutionPolicy Bypass -File .\scripts\day5_engineering_check.ps1
 
 ---
 
+## 压测说明
+
+### 主链路压测
+
+主压测脚本 [backend/locustfile.py](backend/locustfile.py) 使用**随机 client_id**，避免触发 Redis 限流对主链路指标产生干扰。
+
+- POST /api/events（权重 10）—— 高频日志上报
+- GET /api/stats/overview（权重 1）—— 统计概览查询
+- GET /api/stats/top-paths?limit=5（权重 1）—— 热门路径查询
+
+所有请求检查 JSON `success` 字段。429 出现在主压测中视为异常。`sync_fallback` 不标记失败，但如果出现则需要在报告中说明 Kafka producer 不可用。
+
+### 限流专项压测
+
+限流专项脚本 [backend/locustfile_rate_limit.py](backend/locustfile_rate_limit.py) 所有虚拟用户使用**固定 client_id** `rate-limit-load-test`，高频发送 POST /api/events。
+
+**429 是预期行为**，脚本将其标记为 success。其他 4xx/5xx 或 `success=false` 才视为失败。
+
+### 运行压测
+
+确保 Docker（MySQL、Redis、Kafka）和 FastAPI 均已启动后：
+
+```powershell
+cd D:\projects\logflow\backend
+
+# 快速检查（15 秒验证链路是否正常）
+powershell -ExecutionPolicy Bypass -File .\scripts\day6_perf_check.ps1
+
+# 正式压测
+powershell -ExecutionPolicy Bypass -File .\scripts\perf\run_locust_100.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\perf\run_locust_300.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\perf\run_locust_500.ps1
+
+# 限流专项
+powershell -ExecutionPolicy Bypass -File .\scripts\perf\run_rate_limit_check.ps1
+```
+
+CSV 结果输出到 [docs/performance/](docs/performance/)。压测报告模板见 [docs/performance/day6_locust_report.md](docs/performance/day6_locust_report.md)。
+
+> 报告模板中所有性能数据均为"待填写"，请在实际运行压测后填入结果。
+
+---
+
 ## 一键验收
 
 确保 MySQL 和 FastAPI 都已启动后，执行：
@@ -297,6 +362,20 @@ cd D:\projects\logflow\backend
 # 终端 2：运行 smoke test
 cd D:\projects\logflow\backend
 powershell -ExecutionPolicy Bypass -File .\scripts\day4_smoke_test.ps1
+```
+
+### Day 5 验收
+
+```powershell
+cd D:\projects\logflow\backend
+powershell -ExecutionPolicy Bypass -File .\scripts\day5_engineering_check.ps1
+```
+
+### Day 6 验收
+
+```powershell
+cd D:\projects\logflow\backend
+powershell -ExecutionPolicy Bypass -File .\scripts\day6_perf_check.ps1
 ```
 
 当前 Day 1 验收结果示例：
@@ -476,11 +555,10 @@ created_at
 
 ---
 
-## Day 6-7 计划
+## Day 7 计划
 
 > 以下功能尚未实现，仅作为后续开发路线。
 
-- Day 6：Locust 压测，记录 100 / 300 / 500 并发下的 QPS、平均响应时间、P95 和错误率
 - Day 7：README 完善、架构图、压测报告、简历描述和面试讲稿
 
 ---
@@ -489,10 +567,8 @@ created_at
 
 当前版本为学习与作品集项目，重点验证 API 网关访问日志采集场景下的后端链路设计。
 
-目前已实现：FastAPI 同步写入 MySQL、统计查询、Redis 固定窗口限流、统计缓存、Kafka 异步削峰、Consumer 异步落库。
+目前已实现：FastAPI 同步写入 MySQL、统计查询、Redis 固定窗口限流、统计缓存、Kafka 异步削峰、Consumer 异步落库、Locust 压测。
 
 缓存存在 TTL 内短暂延迟，限流不可用时自动放行。Consumer 为逐条消费落库，Kafka 写入失败时支持 fallback 同步写库。
-
-后续将接入 Locust 压测。
 
 本项目不宣称支持百万级并发，也不替代 ELK、Loki、Prometheus、Grafana 等生产级可观测平台。
