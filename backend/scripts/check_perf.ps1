@@ -4,7 +4,7 @@ $BackendRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $BackendRoot
 
 Write-Host ""
-Write-Host "=== LogFlow Day 6 Perf Check ===" -ForegroundColor Cyan
+Write-Host "=== LogFlow Performance Check ===" -ForegroundColor Cyan
 Write-Host ""
 
 $HealthUrl = "http://localhost:8000/api/health"
@@ -43,5 +43,5 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "=== Day 6 perf check passed ===" -ForegroundColor Green
+Write-Host "=== Performance check passed ===" -ForegroundColor Green
 Write-Host ""

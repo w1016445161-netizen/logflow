@@ -1,4 +1,4 @@
-# LogFlow Day 6 — Locust 压测报告
+# LogFlow — Locust 压测报告
 
 > 所有性能数据均为"待填写"。请在实际运行压测后填入结果。
 

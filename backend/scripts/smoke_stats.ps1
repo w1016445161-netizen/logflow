@@ -20,7 +20,7 @@ function Write-Fail($msg) {
 }
 
 Write-Host ""
-Write-Host "=== LogFlow Day 2 Smoke Test ===" -ForegroundColor Cyan
+Write-Host "=== LogFlow Stats Smoke Test ===" -ForegroundColor Cyan
 Write-Host "Base URL: $BaseUrl"
 Write-Host ""
 
@@ -42,8 +42,8 @@ Write-Step "Insert test data"
 
 try {
     $null = Post-Event @{
-        client_id    = "d2-client-001-$RunId"
-        user_id      = "d2-u10001"
+        client_id    = "stats-client-001-$RunId"
+        user_id      = "stats-u10001"
         event_type   = "api_access"
         path         = "/api/login"
         method       = "POST"
@@ -52,13 +52,13 @@ try {
         ip           = "192.168.1.101"
         user_agent   = "Mozilla/5.0"
         service_name = "gateway-service"
-        trace_id     = "trace-d2-001"
+        trace_id     = "trace-stats-001"
         extra        = @{ login_type = "password" }
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-001-$RunId"
-        user_id      = "d2-u10001"
+        client_id    = "stats-client-001-$RunId"
+        user_id      = "stats-u10001"
         event_type   = "api_access"
         path         = "/api/login"
         method       = "POST"
@@ -67,13 +67,13 @@ try {
         ip           = "192.168.1.101"
         user_agent   = "Mozilla/5.0"
         service_name = "gateway-service"
-        trace_id     = "trace-d2-002"
+        trace_id     = "trace-stats-002"
         extra        = @{ login_type = "sms" }
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-002-$RunId"
-        user_id      = "d2-u10002"
+        client_id    = "stats-client-002-$RunId"
+        user_id      = "stats-u10002"
         event_type   = "api_access"
         path         = "/api/users/profile"
         method       = "GET"
@@ -82,13 +82,13 @@ try {
         ip           = "10.0.1.1"
         user_agent   = "MobileApp/2.0"
         service_name = "gateway-service"
-        trace_id     = "trace-d2-003"
+        trace_id     = "trace-stats-003"
         extra        = @{}
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-003-$RunId"
-        user_id      = "d2-u10003"
+        client_id    = "stats-client-003-$RunId"
+        user_id      = "stats-u10003"
         event_type   = "api_error"
         path         = "/api/orders/create"
         method       = "POST"
@@ -97,13 +97,13 @@ try {
         ip           = "10.0.1.2"
         user_agent   = "curl/7.68.0"
         service_name = "gateway-service"
-        trace_id     = "trace-d2-004"
+        trace_id     = "trace-stats-004"
         extra        = @{ error = "database timeout" }
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-004-$RunId"
-        user_id      = "d2-u10004"
+        client_id    = "stats-client-004-$RunId"
+        user_id      = "stats-u10004"
         event_type   = "api_error"
         path         = "/api/orders/create"
         method       = "POST"
@@ -112,13 +112,13 @@ try {
         ip           = "10.0.1.3"
         user_agent   = "curl/7.68.0"
         service_name = "gateway-service"
-        trace_id     = "trace-d2-005"
+        trace_id     = "trace-stats-005"
         extra        = @{ error = "upstream timeout" }
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-005-$RunId"
-        user_id      = "d2-u10005"
+        client_id    = "stats-client-005-$RunId"
+        user_id      = "stats-u10005"
         event_type   = "slow_request"
         path         = "/api/payments/callback"
         method       = "POST"
@@ -127,13 +127,13 @@ try {
         ip           = "10.0.1.4"
         user_agent   = "python-requests/2.28"
         service_name = "gateway-service"
-        trace_id     = "trace-d2-006"
+        trace_id     = "trace-stats-006"
         extra        = @{ provider = "mock-pay" }
     }
 
     $null = Post-Event @{
-        client_id    = "d2-client-006-$RunId"
-        user_id      = "d2-u10006"
+        client_id    = "stats-client-006-$RunId"
+        user_id      = "stats-u10006"
         event_type   = "slow_request"
         path         = "/api/products/search"
         method       = "GET"
@@ -142,7 +142,7 @@ try {
         ip           = "10.0.1.5"
         user_agent   = "MobileApp/2.0"
         service_name = "gateway-service"
-        trace_id     = "trace-d2-007"
+        trace_id     = "trace-stats-007"
         extra        = @{ query = "laptop" }
     }
 
@@ -318,5 +318,5 @@ try {
 
 # --------------------------------------------------
 Write-Host ""
-Write-Host "=== All Day 2 smoke tests passed ===" -ForegroundColor Green
+Write-Host "=== All stats smoke tests passed ===" -ForegroundColor Green
 Write-Host ""

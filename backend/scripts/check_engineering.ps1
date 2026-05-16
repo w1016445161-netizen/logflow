@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
-Write-Host "=== LogFlow Day 5 Engineering Check ===" -ForegroundColor Cyan
+Write-Host "=== LogFlow Engineering Check ===" -ForegroundColor Cyan
 Write-Host ""
 
 $PythonExe = Join-Path $BaseDir ".venv\Scripts\python.exe"
@@ -23,7 +23,7 @@ try {
     & $PythonExe -m pytest -q
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
-        Write-Host "=== Day 5 engineering check passed ===" -ForegroundColor Green
+        Write-Host "=== Engineering check passed ===" -ForegroundColor Green
         Write-Host ""
     } else {
         Write-Host ""

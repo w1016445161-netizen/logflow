@@ -20,7 +20,7 @@ function Write-Fail($msg) {
 }
 
 Write-Host ""
-Write-Host "=== LogFlow Day 1 Smoke Test ===" -ForegroundColor Cyan
+Write-Host "=== LogFlow Baseline Smoke Test ===" -ForegroundColor Cyan
 Write-Host "Base URL: $BaseUrl"
 Write-Host ""
 
@@ -195,5 +195,5 @@ try {
 
 # --------------------------------------------------
 Write-Host ""
-Write-Host "=== All Day 1 smoke tests passed ===" -ForegroundColor Green
+Write-Host "=== All baseline smoke tests passed ===" -ForegroundColor Green
 Write-Host ""

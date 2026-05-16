@@ -29,7 +29,7 @@ Write-Host "     .\.venv\Scripts\python.exe -m app.kafka.consumer" -ForegroundCo
 Write-Host "==============================================" -ForegroundColor Yellow
 Write-Host ""
 
-Write-Host "=== LogFlow Day 4 Smoke Test ===" -ForegroundColor Cyan
+Write-Host "=== LogFlow Kafka Smoke Test ===" -ForegroundColor Cyan
 Write-Host "Base URL: $BaseUrl"
 Write-Host ""
 
@@ -54,22 +54,22 @@ try {
 # --------------------------------------------------
 Write-Step "Event submitted to Kafka"
 
-$ClientId = "d4-client-$RunId"
-$TraceId = "trace-d4-$RunId"
+$ClientId = "kafka-client-$RunId"
+$TraceId = "trace-kafka-$RunId"
 
 $body = @{
     client_id    = $ClientId
-    user_id      = "d4-u10001"
+    user_id      = "kafka-u10001"
     event_type   = "api_access"
-    path         = "/api/day4/kafka-test"
+    path         = "/api/kafka/smoke-test"
     method       = "POST"
     status_code  = 200
     duration_ms  = 66
     ip           = "10.4.0.1"
-    user_agent   = "Day4-Smoke-Test/1.0"
+    user_agent   = "Kafka-Smoke-Test/1.0"
     service_name = "gateway-service"
     trace_id     = $TraceId
-    extra        = @{ day = 4; mode = "kafka" }
+    extra        = @{ mode = "kafka" }
 } | ConvertTo-Json -Depth 10
 
 try {
@@ -105,7 +105,7 @@ for ($i = 1; $i -le 10; $i++) {
     try {
         $r = Invoke-RestMethod -Uri "$BaseUrl/api/events/$EventId" -Method Get
         if ($r.success) {
-            if ($r.data.path -eq "/api/day4/kafka-test" -and $r.data.trace_id -eq $TraceId) {
+            if ($r.data.path -eq "/api/kafka/smoke-test" -and $r.data.trace_id -eq $TraceId) {
                 $Found = $true
                 break
             }
@@ -144,5 +144,5 @@ try {
 
 # --------------------------------------------------
 Write-Host ""
-Write-Host "=== All Day 4 smoke tests passed ===" -ForegroundColor Green
+Write-Host "=== All kafka smoke tests passed ===" -ForegroundColor Green
 Write-Host ""

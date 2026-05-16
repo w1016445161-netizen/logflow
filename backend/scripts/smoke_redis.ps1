@@ -19,7 +19,7 @@ function Write-Fail($msg) {
 }
 
 Write-Host ""
-Write-Host "=== LogFlow Day 3 Smoke Test ===" -ForegroundColor Cyan
+Write-Host "=== LogFlow Redis Smoke Test ===" -ForegroundColor Cyan
 Write-Host "Base URL: $BaseUrl"
 Write-Host ""
 
@@ -128,5 +128,5 @@ try {
 
 # --------------------------------------------------
 Write-Host ""
-Write-Host "=== All Day 3 smoke tests passed ===" -ForegroundColor Green
+Write-Host "=== All redis smoke tests passed ===" -ForegroundColor Green
 Write-Host ""
