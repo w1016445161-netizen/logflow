@@ -6,3 +6,5 @@ __pycache__/
 mysql_data/
 docs/performance/*.csv
 CLAUDE.md
+
+.claude/
